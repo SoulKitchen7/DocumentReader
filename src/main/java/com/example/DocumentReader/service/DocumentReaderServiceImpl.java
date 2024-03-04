@@ -60,7 +60,7 @@ public class DocumentReaderServiceImpl implements DocumentReaderService{
             return count;
     }
 
-    private static int countPdfPages(File pdfFile) {
+    public static int countPdfPages(File pdfFile) {
 
         try (PDDocument document = PDDocument.load(pdfFile)){
             return document.getNumberOfPages();
@@ -71,14 +71,14 @@ public class DocumentReaderServiceImpl implements DocumentReaderService{
         }
     }
 
-    private static int countDocxPages(File docxFile) throws FileNotFoundException {
+    public static int countDocxPages(File docxFile) throws FileNotFoundException {
 
         FileInputStream fis = new FileInputStream(docxFile.getAbsolutePath());
 
         try (XWPFDocument document = new XWPFDocument(fis)) {
             return document.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
         } catch (IOException e) {
-            System.err.println("Ошибка при чтении PDF файла");
+            System.err.println("Ошибка при чтении Word файла");
             e.printStackTrace();
             return 0;
         }

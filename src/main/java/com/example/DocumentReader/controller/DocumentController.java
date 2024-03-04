@@ -1,5 +1,6 @@
 package com.example.DocumentReader.controller;
 
+import com.example.DocumentReader.model.DocumentResponse;
 import com.example.DocumentReader.service.DocumentReaderService;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -22,12 +23,12 @@ public class DocumentController {
     }
 
     @GetMapping ("/info")
-    public String getNumberOfDocumentsAndPages(@RequestParam String directoryPath) throws FileNotFoundException {
+    public DocumentResponse getNumberOfDocumentsAndPages(@RequestParam String directoryPath) throws FileNotFoundException {
 
         int pageCount = documentReaderService.getNumberOfPages(directoryPath);
         int documentCount = documentReaderService.getNumberOfDocuments(directoryPath);
 
-        return "Documents: " + documentCount + " Pages: " + pageCount;
+        return new DocumentResponse(documentCount, pageCount);
     }
 
 }
