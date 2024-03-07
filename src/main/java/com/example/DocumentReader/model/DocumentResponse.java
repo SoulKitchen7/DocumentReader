@@ -16,4 +16,5 @@ public class DocumentResponse {
     public int getPages() {
         return pages;
     }
+
 }

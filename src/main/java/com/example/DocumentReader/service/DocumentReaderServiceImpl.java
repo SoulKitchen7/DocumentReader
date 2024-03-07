@@ -1,89 +1,118 @@
 package com.example.DocumentReader.service;
 
+import com.example.DocumentReader.model.DocumentResponse;
 import org.apache.pdfbox.pdmodel.PDDocument;
+import org.apache.poi.xwpf.usermodel.Document;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.InvalidPathException;
 
 @Service
 public class DocumentReaderServiceImpl implements DocumentReaderService{
+
+    private static final Logger logger = LoggerFactory.getLogger (DocumentReaderServiceImpl.class);
     @Override
-    public int getNumberOfDocuments(String directoryPath) {
+    public DocumentResponse getNumberOfDocumentsAndPages(String directoryPath) throws InvalidPathException {
 
         File directory = new File(directoryPath);
+        int documentsCount = 0;
+        int pagesCount = 0;
 
         if (!directory.exists() && !directory.isDirectory()) {
-            return 0;
+            throw  new InvalidPathException(directoryPath, "Неверный путь к файлам");
+        }
+        File[] files = directory.listFiles();
+        for (File file : files) {
+            if (file.isDirectory()) {
+                DocumentResponse documentResponse = getNumberOfDocumentsAndPages(file.getAbsolutePath());
+                if (documentResponse != null) {
+                    documentsCount += documentResponse.getDocuments();
+                    pagesCount += documentResponse.getPages();
+                }
+            } else {
+                documentsCount += getNumberOfDocuments(file);
+                pagesCount += getNumberOfPages(file);
+            }
         }
 
-        int count = 0;
-        File[] files = directory.listFiles();
+        return new DocumentResponse(documentsCount, pagesCount);
+    }
 
-        for (File file : files) {
-            if (file.isFile()) {
-                count++;
-            } else if (file.isDirectory()) {
-                count += getNumberOfDocuments(file.getAbsolutePath()); // Рекурсивно вызываем метод для подпапки
-            }
+    @Override
+    public int getNumberOfDocuments(File file) {
+
+        int count = 0;
+
+        if (file.isFile()) {
+            count++;
         }
         return count;
     }
 
     @Override
-    public int getNumberOfPages(String directoryPath) throws FileNotFoundException {
-
-        File directory = new File(directoryPath);
-
-        if (!directory.exists() && !directory.isDirectory()) {
-            return 0;
-        }
+    public int getNumberOfPages(File file) {
 
         int count = 0;
-        File[] files = directory.listFiles();
+        String fileName = file.getName();
 
-        for (File file : files) {
-            if (file.isDirectory()) {
-                count += getNumberOfPages(file.getAbsolutePath()); // Рекурсивно вызываем метод для подпапки
-            } else {
-                String fileName = file.getName();
-                if (fileName.endsWith(".pdf")) {
-                    count+=countPdfPages(file);
-                } else if (fileName.endsWith(".docx")) {
-                    count+=countDocxPages(file);
-                }
-            }
+        String fileExtension = fileName.substring(fileName.lastIndexOf(".") + 1);
+
+        switch (fileExtension) {
+            case "pdf":
+                count += countPdfPages(file);
+                break;
+            case "docx":
+                count += countDocxPages(file);
+                break;
+            default:
+                logger.error("Расширение файла не поддерживается");
+                return 0;
         }
-            return count;
+
+        return count;
     }
 
     public static int countPdfPages(File pdfFile) {
 
-        try (PDDocument document = PDDocument.load(pdfFile)){
+        try (PDDocument document = PDDocument.load(pdfFile)) {
             return document.getNumberOfPages();
+        } catch (FileNotFoundException e) {
+            logger.error("Файл " + pdfFile.getName() + " не найден");
+            return 0;
         } catch (IOException e) {
-            System.err.println("Ошибка при чтении PDF файла");
-            e.printStackTrace();
+            logger.error("Ошибка при чтении файла: " + pdfFile.getName());
+            return 0;
+        } catch (SecurityException e) {
+            logger.error("Нет доступа к файлу: " + pdfFile.getName());
             return 0;
         }
     }
 
-    public static int countDocxPages(File docxFile) throws FileNotFoundException {
+    public static int countDocxPages(File docxFile) {
 
-        FileInputStream fis = new FileInputStream(docxFile.getAbsolutePath());
-
-        try (XWPFDocument document = new XWPFDocument(fis)) {
+        try (FileInputStream fis = new FileInputStream(docxFile.getAbsolutePath())) {
+            XWPFDocument document = new XWPFDocument(fis);
             return document.getProperties().getExtendedProperties().getUnderlyingProperties().getPages();
+        } catch (FileNotFoundException e) {
+            logger.error("Файл " + docxFile.getName() + " не найден");
+            return 0;
         } catch (IOException e) {
-            System.err.println("Ошибка при чтении Word файла");
-            e.printStackTrace();
+            logger.error("Ошибка при чтении файла: " + docxFile.getName());
+            return 0;
+        } catch (SecurityException e) {
+            logger.error("Нет доступа к файлу: " + docxFile.getName());
             return 0;
         }
     }
 
-    // Расширение предусмотренно путем создания новых методов для обработки документво других типов (Excel и пр.)
+    // Расширение предусмотренно путем создания новых методов для
+    // обработки документво других типов (Excel, PowerPoint и пр.)
 
 }

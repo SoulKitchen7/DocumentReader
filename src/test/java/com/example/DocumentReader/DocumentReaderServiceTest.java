@@ -38,9 +38,10 @@ public class DocumentReaderServiceTest {
 
         DocumentReaderServiceImpl documentReaderService = new DocumentReaderServiceImpl();
         String directoryPath = "C:\\Users\\uliss\\Downloads\\Test";
+        File file = new File(directoryPath);
         int expected = 7;
 
-        int actual = documentReaderService.getNumberOfDocuments(directoryPath);
+        int actual = documentReaderService.getNumberOfDocuments(file);
 
         assertEquals(expected, actual);
 

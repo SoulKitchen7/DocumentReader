@@ -23,12 +23,9 @@ public class DocumentController {
     }
 
     @GetMapping ("/info")
-    public DocumentResponse getNumberOfDocumentsAndPages(@RequestParam String directoryPath) throws FileNotFoundException {
+    public DocumentResponse getNumberOfDocumentsAndPages(@RequestParam String directoryPath) {
 
-        int pageCount = documentReaderService.getNumberOfPages(directoryPath);
-        int documentCount = documentReaderService.getNumberOfDocuments(directoryPath);
-
-        return new DocumentResponse(documentCount, pageCount);
+        return documentReaderService.getNumberOfDocumentsAndPages(directoryPath);
     }
 
 }
